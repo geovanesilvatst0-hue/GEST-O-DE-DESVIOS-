@@ -1,0 +1,5 @@
+{
+  "name": "Gestor de Desvios de Motoristas",
+  "description": "Uma ferramenta completa para upload, edição e visualização de desvios de motoristas com dashboards interativos e exportação de dados tratados para Excel.",
+  "requestFramePermissions": []
+}
