@@ -8,7 +8,6 @@ import { DeviationRecord } from '../types';
 const supabaseUrl = 'https://tlqinhgdveqlbovttwdy.supabase.co'; 
 const supabaseAnonKey = 'sb_publishable_cPWj2-GiAqD4nkGH7zcTIw_goAKr9ry';
 
-// Verifica se as chaves foram devidamente preenchidas e são válidas
 export const isSupabaseConfigured = 
   !!supabaseUrl && 
   !!supabaseAnonKey && 
@@ -22,21 +21,15 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
 // --- Autenticação ---
 
 export const signIn = async (email: string, password: string) => {
-  if (!supabase) throw new Error("Supabase não configurado corretamente no arquivo services/supabaseService.ts.");
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  if (!supabase) throw new Error("Supabase não configurado.");
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 };
 
 export const signUp = async (email: string, password: string) => {
   if (!supabase) throw new Error("Supabase não configurado.");
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
   return data;
 };
@@ -63,11 +56,7 @@ export const fetchDeviations = async (): Promise<DeviationRecord[]> => {
     .select('*')
     .order('DATA', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao buscar desvios:', error);
-    throw error;
-  }
-
+  if (error) throw error;
   return (data || []).map(item => ({
     ...item,
     id: item.id || crypto.randomUUID(),
@@ -77,14 +66,20 @@ export const fetchDeviations = async (): Promise<DeviationRecord[]> => {
 
 export const upsertDeviations = async (records: DeviationRecord[]) => {
   if (!supabase) throw new Error("Supabase não configurado.");
-  const dataToUpload = records.map(({ isValid, ...rest }) => rest);
+  
+  // Removemos campos calculados ou temporários que não existem na tabela SQL
+  const dataToUpload = records.map(({ isValid, ...rest }) => ({
+    ...rest,
+    // Garantir que a data esteja no formato YYYY-MM-DD para o Postgres
+    DATA: rest.DATA ? new Date(rest.DATA).toISOString().split('T')[0] : null
+  }));
 
   const { data, error } = await supabase
     .from('deviations')
     .upsert(dataToUpload, { onConflict: 'id' });
 
   if (error) {
-    console.error('Erro ao salvar desvios:', error);
+    console.error('Erro detalhado do Supabase:', error);
     throw error;
   }
 
@@ -93,13 +88,6 @@ export const upsertDeviations = async (records: DeviationRecord[]) => {
 
 export const deleteDeviation = async (id: string) => {
   if (!supabase) return;
-  const { error } = await supabase
-    .from('deviations')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error('Erro ao deletar desvio:', error);
-    throw error;
-  }
+  const { error } = await supabase.from('deviations').delete().eq('id', id);
+  if (error) throw error;
 };

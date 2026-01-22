@@ -31,10 +31,9 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
-  const [showSql, setShowSql] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const sqlCode = `-- 1. Criar a tabela de desvios
+  const sqlCode = `-- 1. CRIAR A TABELA
 CREATE TABLE deviations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "MOTORISTAS" TEXT,
@@ -53,14 +52,15 @@ CREATE TABLE deviations (
   user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid()
 );
 
--- 2. Habilitar RLS (Segurança)
+-- 2. HABILITAR SEGURANÇA (RLS)
 ALTER TABLE deviations ENABLE ROW LEVEL SECURITY;
 
--- 3. Criar política de acesso para usuários autenticados
-CREATE POLICY "Permitir tudo para usuários logados" 
+-- 3. CRIAR POLÍTICA DE ACESSO TOTAL
+CREATE POLICY "Acesso Total Autenticado" 
 ON deviations FOR ALL 
 TO authenticated 
-USING (true);`;
+USING (true)
+WITH CHECK (true);`;
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -113,21 +113,25 @@ USING (true);`;
       if (cloudData.length > 0) {
         setData(cloudData);
       }
-    } catch (err) {
-      console.warn("Falha ao sincronizar.");
+    } catch (err: any) {
+      console.warn("Falha ao sincronizar:", err.message);
     } finally {
       setSyncing(false);
     }
   };
 
   const handleSaveToCloud = async () => {
-    if (!isSupabaseConfigured || data.length === 0) return;
+    if (!isSupabaseConfigured || data.length === 0) {
+      alert("Nenhum dado para salvar.");
+      return;
+    }
     setSyncing(true);
     try {
       await upsertDeviations(data);
-      alert("Dados salvos na nuvem com sucesso!");
-    } catch (err) {
-      alert("Erro ao salvar na nuvem.");
+      alert("✅ Dados salvos com sucesso no Supabase!");
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ ERRO AO SALVAR:\n\n${err.message || 'Erro desconhecido'}\n\nCertifique-se de que você executou o SCRIPT SQL no painel do Supabase.`);
     } finally {
       setSyncing(false);
     }
@@ -160,24 +164,14 @@ USING (true);`;
           </div>
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Configuração do Banco de Dados</h2>
           <p className="text-sm text-gray-500 text-center mb-8">
-            Para ativar a nuvem, configure as chaves no seu ambiente e crie a tabela no Supabase.
+            Para ativar a nuvem, configure as chaves no código e execute o script abaixo no seu Supabase.
           </p>
 
           <div className="space-y-6">
             <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
-              <h3 className="text-xs font-black text-gray-400 uppercase mb-3 flex items-center gap-2">
-                <Settings className="w-3 h-3" /> 1. Chaves de API (Variáveis de Ambiente)
-              </h3>
-              <div className="grid grid-cols-1 gap-2 text-xs font-mono bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-blue-600">SUPABASE_URL=https://seu-projeto.supabase.co</p>
-                <p className="text-blue-600">SUPABASE_ANON_KEY=sua-chave-anonima-aqui</p>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-xs font-black text-gray-400 uppercase flex items-center gap-2">
-                  <Database className="w-3 h-3" /> 2. Script SQL (Tabela 'deviations')
+                  <Database className="w-3 h-3" /> Script SQL (Execute no "SQL Editor" do Supabase)
                 </h3>
                 <button 
                   onClick={handleCopySql}
@@ -187,7 +181,7 @@ USING (true);`;
                   {copied ? 'Copiado!' : 'Copiar Script'}
                 </button>
               </div>
-              <pre className="text-[10px] leading-relaxed font-mono bg-[#1e293b] text-blue-300 p-4 rounded-lg overflow-x-auto max-h-48 custom-scrollbar">
+              <pre className="text-[10px] leading-relaxed font-mono bg-[#1e293b] text-blue-300 p-4 rounded-lg overflow-x-auto max-h-64 custom-scrollbar">
                 {sqlCode}
               </pre>
             </div>
@@ -200,9 +194,6 @@ USING (true);`;
             >
               Já configurei, atualizar sistema
             </button>
-            <p className="text-[10px] text-gray-400 text-center font-bold uppercase">
-              Nota: O login só funcionará após a configuração das chaves.
-            </p>
           </div>
         </div>
       </div>
