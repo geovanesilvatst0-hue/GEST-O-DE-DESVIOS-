@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { DeviationRecord } from './types';
 import { cleanData, exportToExcel } from './services/excelService';
-import { fetchDeviations, upsertDeviations, onAuthStateChange, signOut, isSupabaseConfigured } from './services/supabaseService';
+import { fetchDeviations, upsertDeviations, deleteDeviation, onAuthStateChange, signOut, isSupabaseConfigured } from './services/supabaseService';
 import DataEditor from './components/DataEditor';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
@@ -131,9 +131,22 @@ WITH CHECK (true);`;
       alert("✅ Dados salvos com sucesso no Supabase!");
     } catch (err: any) {
       console.error(err);
-      alert(`❌ ERRO AO SALVAR:\n\n${err.message || 'Erro desconhecido'}\n\nCertifique-se de que você executou o SCRIPT SQL no painel do Supabase.`);
+      alert(`❌ ERRO AO SALVAR:\n\n${err.message || 'Erro desconhecido'}`);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      // 1. Tenta apagar no banco de dados
+      await deleteDeviation(id);
+      // 2. Se deu certo no banco, remove da tela
+      setData(prev => prev.filter(item => item.id !== id));
+    } catch (err: any) {
+      console.error("Erro ao deletar:", err);
+      // Se for um ID que ainda não estava no banco (recém criado na tela), removemos apenas da tela
+      setData(prev => prev.filter(item => item.id !== id));
     }
   };
 
@@ -286,7 +299,7 @@ WITH CHECK (true);`;
         ) : (
           <div className="h-full">
             {activeTab === 'editor' ? (
-              <DataEditor data={data} onUpdate={setData} />
+              <DataEditor data={data} onUpdate={setData} onDelete={handleDelete} />
             ) : (
               <div className="h-full overflow-y-auto pr-2 custom-scrollbar print:overflow-visible print:pr-0">
                 <Dashboard data={data} />

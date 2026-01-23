@@ -6,9 +6,10 @@ import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter } from 'lu
 interface DataEditorProps {
   data: DeviationRecord[];
   onUpdate: (newData: DeviationRecord[]) => void;
+  onDelete: (id: string) => void;
 }
 
-const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate }) => {
+const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => {
   const handleCellChange = (id: string, field: keyof DeviationRecord, value: any) => {
     const newData = data.map(item => {
       if (item.id === id) {
@@ -37,10 +38,11 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate }) => {
   };
 
   const removeRow = (id: string) => {
-    onUpdate(data.filter(item => item.id !== id));
+    if (window.confirm("Tem certeza que deseja apagar este registro permanentemente?")) {
+      onDelete(id);
+    }
   };
 
-  // Reordenado conforme a imagem de referência
   const columns: { label: string; key: keyof DeviationRecord; type: string }[] = [
     { label: 'MOTORISTAS', key: 'MOTORISTAS', type: 'text' },
     { label: 'TIPO DE DESVIO', key: 'TIPO DE DESVIO', type: 'text' },
