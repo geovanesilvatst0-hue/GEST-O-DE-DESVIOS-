@@ -68,9 +68,10 @@ export const upsertDeviations = async (records: DeviationRecord[]) => {
   if (!supabase) throw new Error("Supabase não configurado.");
   
   // Removemos campos calculados ou temporários que não existem na tabela SQL
+  // E garantimos que QTD seja número
   const dataToUpload = records.map(({ isValid, ...rest }) => ({
     ...rest,
-    // Garantir que a data esteja no formato YYYY-MM-DD para o Postgres
+    QTD: Number(rest.QTD) || 0,
     DATA: rest.DATA ? new Date(rest.DATA).toISOString().split('T')[0] : null
   }));
 

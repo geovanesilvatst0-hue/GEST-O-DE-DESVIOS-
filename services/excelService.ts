@@ -9,33 +9,32 @@ export const cleanData = (data: any[]): { cleaned: DeviationRecord[], errors: Va
   data.forEach((row, index) => {
     const rowIdx = index + 1;
     
-    // Normalize column mapping if the input has slight variations
-    const motorista = String(row['MOTORISTAS'] || '').trim();
-    const tipoDesvio = String(row['TIPO DE DESVIO'] || '').trim();
-    const qtd = parseInt(row['QTD']) || 0;
+    // Normalização rigorosa dos campos de texto para evitar duplicatas por espaços ou caixa alta/baixa
+    const motorista = String(row['MOTORISTAS'] || '').trim().toUpperCase();
+    const tipoDesvio = String(row['TIPO DE DESVIO'] || '').trim().toUpperCase();
+    const qtdRaw = row['QTD'];
+    const qtd = typeof qtdRaw === 'number' ? qtdRaw : parseInt(String(qtdRaw || '0').replace(/\D/g, '')) || 0;
     let dataRaw = row['DATA'];
     
     // Basic Validation
     if (!motorista) errors.push({ row: rowIdx, field: 'MOTORISTAS', message: 'Campo obrigatório' });
     if (!tipoDesvio) errors.push({ row: rowIdx, field: 'TIPO DE DESVIO', message: 'Campo obrigatório' });
-    if (!dataRaw) errors.push({ row: rowIdx, field: 'DATA', message: 'Campo obrigatório' });
 
     // Date Processing
     let dateObj: Date | null = null;
     if (typeof dataRaw === 'number') {
-      // Excel date format
       dateObj = XLSX.SSF.parse_date_code(dataRaw) ? new Date((dataRaw - 25569) * 86400 * 1000) : null;
     } else if (dataRaw) {
       dateObj = new Date(dataRaw);
     }
 
+    // Se não tiver data, tentamos pegar do campo MÊS ou apenas marcar como inválido para edição
     const isValid = motorista && tipoDesvio && dateObj && !isNaN(dateObj.getTime());
     
     if (dateObj && !isNaN(dateObj.getTime())) {
       const ano = dateObj.getFullYear();
       const mesNum = dateObj.getMonth() + 1;
       
-      // Calculate ISO week
       const d = new Date(dateObj);
       d.setHours(0, 0, 0, 0);
       d.setDate(d.getDate() + 4 - (d.getDay() || 7));
@@ -48,7 +47,7 @@ export const cleanData = (data: any[]): { cleaned: DeviationRecord[], errors: Va
         id: crypto.randomUUID(),
         MOTORISTAS: motorista,
         "TIPO DE DESVIO": tipoDesvio,
-        QTD: isNaN(qtd) ? 0 : qtd,
+        QTD: qtd,
         "MÊS": String(row['MÊS'] || mesNome).toUpperCase().trim(),
         TRATADO: String(row['TRATADO'] || 'NÃO').toUpperCase().trim(),
         TRATATIVA: String(row['TRATATIVA'] || '').trim(),
@@ -58,21 +57,20 @@ export const cleanData = (data: any[]): { cleaned: DeviationRecord[], errors: Va
         ANO: ano,
         MES_NUM: mesNum,
         SEMANA: semana,
-        isValid: !!isValid
+        isValid: true
       });
     } else {
-      // Keep invalid rows for editing but mark them
        cleaned.push({
         id: crypto.randomUUID(),
         MOTORISTAS: motorista,
         "TIPO DE DESVIO": tipoDesvio,
-        QTD: isNaN(qtd) ? 0 : qtd,
-        "MÊS": String(row['MÊS'] || '').toUpperCase(),
-        TRATADO: String(row['TRATADO'] || 'NÃO').toUpperCase(),
-        TRATATIVA: String(row['TRATATIVA'] || ''),
+        QTD: qtd,
+        "MÊS": String(row['MÊS'] || '').toUpperCase().trim(),
+        TRATADO: String(row['TRATADO'] || 'NÃO').toUpperCase().trim(),
+        TRATATIVA: String(row['TRATATIVA'] || '').trim(),
         DATA: String(dataRaw || ''),
-        STATUS: String(row['STATUS'] || ''),
-        "APLICADO POR": String(row['APLICADO POR'] || ''),
+        STATUS: String(row['STATUS'] || '').trim(),
+        "APLICADO POR": String(row['APLICADO POR'] || '').trim(),
         isValid: false
       });
     }
@@ -83,8 +81,6 @@ export const cleanData = (data: any[]): { cleaned: DeviationRecord[], errors: Va
 
 export const exportToExcel = (originalData: DeviationRecord[], treatedData: DeviationRecord[]) => {
   const wb = XLSX.utils.book_new();
-  
-  // Função auxiliar para reordenar colunas exatamente como na imagem
   const reorderColumns = (rec: DeviationRecord) => ({
     "MOTORISTAS": rec.MOTORISTAS,
     "TIPO DE DESVIO": rec["TIPO DE DESVIO"],
@@ -100,13 +96,9 @@ export const exportToExcel = (originalData: DeviationRecord[], treatedData: Devi
     "SEMANA": rec.SEMANA
   });
 
-  // Create sheet 1: BASE_ATUAL
   const ws1 = XLSX.utils.json_to_sheet(originalData.map(reorderColumns));
   XLSX.utils.book_append_sheet(wb, ws1, "BASE_ATUAL");
-  
-  // Create sheet 2: BASE_TRATADA (Cleaned and formatted)
   const ws2 = XLSX.utils.json_to_sheet(treatedData.filter(r => r.isValid).map(reorderColumns));
   XLSX.utils.book_append_sheet(wb, ws2, "BASE_TRATADA");
-  
   XLSX.writeFile(wb, "gestao_desvios_atualizada.xlsx");
 };
