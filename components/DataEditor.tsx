@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { DeviationRecord } from '../types';
-import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter, Search, X } from 'lucide-react';
+import { DeviationRecord, MONTH_MAP } from '../types';
+import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter, Search, X, Calendar } from 'lucide-react';
 
 interface DataEditorProps {
   data: DeviationRecord[];
@@ -65,6 +65,21 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
     { label: 'APLICADO POR', key: 'APLICADO POR', type: 'text' },
   ];
 
+  // Lista de meses extraída do MONTH_MAP
+  const mesesOptions = Object.keys(MONTH_MAP);
+
+  // Opções para Tipo de Desvio conforme solicitado
+  const desvioOptions = [
+    "V-ACIMA DE 60 KM/H",
+    "V-ACIMA DE 80 KM/H",
+    "FRENAGEM BRUSCA",
+    "USO DO CINTO",
+    "USO DO CELULAR",
+    "FADIGA",
+    "DISTRAÇÃO",
+    "OBSTRUÇÃO DE CÂMERA"
+  ];
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full">
       <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 gap-4">
@@ -111,6 +126,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                     <div className="flex flex-col opacity-60 group-hover:opacity-100 transition-opacity">
                       {col.label === 'TIPO DE DESVIO' ? (
                         <Filter className="w-3 h-3 text-white bg-white/20 p-0.5 rounded" />
+                      ) : col.label === 'DATA' ? (
+                        <Calendar className="w-3.5 h-3.5 text-white" />
                       ) : (
                         <ChevronDown className="w-4 h-4 text-white" />
                       )}
@@ -140,12 +157,16 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                   />
                 </td>
                 <td className="p-1 border-r border-gray-50">
-                  <input 
-                    type="text" 
+                  <select 
                     value={row["TIPO DE DESVIO"]} 
                     onChange={e => handleCellChange(row.id, 'TIPO DE DESVIO', e.target.value)}
-                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none"
-                  />
+                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none cursor-pointer"
+                  >
+                    <option value="">- SELECIONAR -</option>
+                    {desvioOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="p-1 border-r border-gray-50">
                   <input 
@@ -156,38 +177,52 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                   />
                 </td>
                 <td className="p-1 border-r border-gray-50">
-                  <input 
-                    type="text" 
+                  <select 
                     value={row["MÊS"]} 
-                    onChange={e => handleCellChange(row.id, 'MÊS', e.target.value.toUpperCase())}
-                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none"
-                  />
+                    onChange={e => handleCellChange(row.id, 'MÊS', e.target.value)}
+                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none cursor-pointer"
+                  >
+                    <option value="">- SELECIONAR -</option>
+                    {mesesOptions.map(mes => (
+                      <option key={mes} value={mes}>{mes}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="p-1 border-r border-gray-50">
                   <select 
                     value={row.TRATADO} 
                     onChange={e => handleCellChange(row.id, 'TRATADO', e.target.value)}
-                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none"
+                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none cursor-pointer"
                   >
                     <option value="SIM">SIM</option>
                     <option value="NÃO">NÃO</option>
                   </select>
                 </td>
                 <td className="p-1 border-r border-gray-50">
-                  <input 
-                    type="text" 
+                  <select 
                     value={row.TRATATIVA} 
                     onChange={e => handleCellChange(row.id, 'TRATATIVA', e.target.value)}
-                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none"
-                  />
+                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none cursor-pointer font-medium"
+                  >
+                    <option value="">-</option>
+                    <option value="ADVERTÊNCIA">ADVERTÊNCIA</option>
+                    <option value="RECICLAGEM">RECICLAGEM</option>
+                    <option value="SUSPENSÃO">SUSPENSÃO</option>
+                    <option value="DEMISSÃO">DEMISSÃO</option>
+                    <option value="ORIENTAÇÃO">ORIENTAÇÃO</option>
+                  </select>
                 </td>
                 <td className="p-1 border-r border-gray-50">
-                  <input 
-                    type="date" 
-                    value={row.DATA} 
-                    onChange={e => handleCellChange(row.id, 'DATA', e.target.value)}
-                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none"
-                  />
+                  <div className="relative flex items-center group/date">
+                    <input 
+                      type="date" 
+                      value={row.DATA} 
+                      onChange={e => handleCellChange(row.id, 'DATA', e.target.value)}
+                      onClick={(e) => (e.target as any).showPicker?.()}
+                      className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none cursor-pointer"
+                    />
+                    <Calendar className="absolute right-2 w-3.5 h-3.5 text-gray-400 pointer-events-none group-hover/date:text-blue-500 transition-colors" />
+                  </div>
                 </td>
                 <td className="p-1 border-r border-gray-50">
                   <input 
