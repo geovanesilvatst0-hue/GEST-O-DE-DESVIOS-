@@ -41,6 +41,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const [isExportingPpt, setIsExportingPpt] = useState(false);
+  const [tableSearch, setTableSearch] = useState('');
   const [filters, setFilters] = useState({
     motorista: 'TODOS',
     searchMotorista: '',
@@ -99,6 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       name: string, 
       tratado: number, 
       pendente: number, 
+      total: number,
       tratativas: string[],
       eventTypes: string[] 
     }> = {};
@@ -108,7 +110,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       const type = (r["TIPO DE DESVIO"] || "N/A").trim().toUpperCase();
       
       if (!driversMap[name]) {
-        driversMap[name] = { name, tratado: 0, pendente: 0, tratativas: [], eventTypes: [] };
+        driversMap[name] = { name, tratado: 0, pendente: 0, total: 0, tratativas: [], eventTypes: [] };
       }
       const qtd = Number(r.QTD) || 0;
       
@@ -120,6 +122,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       } else {
         driversMap[name].pendente += qtd;
       }
+      
+      driversMap[name].total += qtd;
 
       if (type && !driversMap[name].eventTypes.includes(type)) {
         driversMap[name].eventTypes.push(type);
@@ -130,6 +134,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       .sort((a, b) => (b.tratado + b.pendente) - (a.tratado + a.pendente))
       .slice(0, 15); // Top 15 para não poluir
   }, [filteredData]);
+
+  const finalTableData = useMemo(() => {
+    if (!tableSearch.trim()) return driverTreatmentData;
+    const term = tableSearch.toUpperCase().trim();
+    return driverTreatmentData.filter(d => d.name.toUpperCase().includes(term));
+  }, [driverTreatmentData, tableSearch]);
 
   const summaryByTypeData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -275,10 +285,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros Globais */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-5 gap-4 no-print">
         <div className="md:col-span-1">
-          <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Pesquisar Nome</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Pesquisar Nome (Global)</label>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input 
@@ -348,17 +358,22 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
            </div>
         </div>
 
-        <div className="h-[400px] w-full mb-10">
+        <div className="h-[500px] w-full mb-10">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={driverTreatmentData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <BarChart 
+              data={driverTreatmentData} 
+              margin={{ top: 30, right: 30, left: 20, bottom: 120 }}
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis 
                 dataKey="name" 
                 angle={-45} 
                 textAnchor="end" 
-                height={80} 
+                height={100} 
                 fontSize={10} 
+                interval={0} 
                 tick={{ fontWeight: '800', fill: '#4b5563' }} 
+                tickMargin={12} 
               />
               <YAxis fontSize={10} tick={{ fontWeight: '800' }} axisLine={false} tickLine={false} />
               <Tooltip 
@@ -367,16 +382,45 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
               />
               <Legend verticalAlign="top" align="right" />
               <Bar dataKey="tratado" name="Tratado (SIM)" fill="#10b981" stackId="a" radius={[0, 0, 0, 0]} barSize={35} />
-              <Bar dataKey="pendente" name="Pendente (NÃO)" fill="#ef4444" stackId="a" radius={[8, 8, 0, 0]} barSize={35} />
+              <Bar dataKey="pendente" name="Pendente (NÃO)" fill="#ef4444" stackId="a" radius={[8, 8, 0, 0]} barSize={35}>
+                 <LabelList 
+                    dataKey="total" 
+                    position="top" 
+                    style={{ fontSize: '11px', fontWeight: '900', fill: '#0e4b61' }} 
+                    offset={10}
+                 />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Tabela de Texto de Tratativas */}
         <div className="border border-gray-100 rounded-xl overflow-hidden bg-gray-50/50">
-          <div className="p-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
-            <MessageSquareText className="w-4 h-4 text-blue-600" />
-            <span className="text-[10px] font-black text-gray-600 uppercase">Detalhamento das Tratativas e Eventos</span>
+          <div className="p-3 bg-gray-100 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <MessageSquareText className="w-4 h-4 text-blue-600" />
+              <span className="text-[10px] font-black text-gray-600 uppercase">Detalhamento das Tratativas e Eventos</span>
+            </div>
+            
+            {/* NOVO CAMPO DE PESQUISA NA TABELA */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Pesquisar motorista nesta lista..." 
+                value={tableSearch} 
+                onChange={e => setTableSearch(e.target.value)}
+                className="w-full pl-8 pr-8 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+              />
+              {tableSearch && (
+                <button 
+                  onClick={() => setTableSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-3 h-3 text-gray-400" />
+                </button>
+              )}
+            </div>
           </div>
           <div className="max-h-[400px] overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -389,12 +433,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {driverTreatmentData.map((d, idx) => (
+                {finalTableData.length > 0 ? finalTableData.map((d, idx) => (
                   <tr key={idx} className="hover:bg-white transition-colors">
                     <td className="p-3 font-bold text-gray-700">{d.name}</td>
                     <td className="p-3 text-center">
                       <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-black text-[10px]">
-                        {d.tratado + d.pendente}
+                        {d.total}
                       </span>
                     </td>
                     <td className="p-3">
@@ -420,7 +464,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-gray-400 font-bold uppercase text-[10px]">
+                      Nenhum motorista encontrado com "{tableSearch}"
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
