@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { DeviationRecord } from '../types';
-import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter } from 'lucide-react';
+import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter, Search, X } from 'lucide-react';
 
 interface DataEditorProps {
   data: DeviationRecord[];
@@ -10,6 +10,16 @@ interface DataEditorProps {
 }
 
 const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const term = searchTerm.toUpperCase().trim();
+    return data.filter(row => 
+      row.MOTORISTAS.toUpperCase().includes(term)
+    );
+  }, [data, searchTerm]);
+
   const handleCellChange = (id: string, field: keyof DeviationRecord, value: any) => {
     const newData = data.map(item => {
       if (item.id === id) {
@@ -57,11 +67,33 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full">
-      <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-        <h2 className="text-sm font-bold text-gray-700">Edição de Registros ({data.length})</h2>
+      <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 gap-4">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <h2 className="text-sm font-bold text-gray-700 whitespace-nowrap">Edição de Registros ({data.length})</h2>
+          
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              type="text"
+              placeholder="Pesquisar motorista..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-8 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-3 h-3 text-gray-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
         <button 
           onClick={addRow}
-          className="flex items-center gap-2 bg-[#0e4b61] hover:bg-[#0a3646] text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-[#0e4b61] hover:bg-[#0a3646] text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm w-full md:w-auto justify-center"
         >
           <Plus className="w-4 h-4" /> Adicionar Linha
         </button>
@@ -90,7 +122,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm">
-            {data.map((row) => (
+            {filteredData.map((row) => (
               <tr key={row.id} className="hover:bg-cyan-50/40 transition-colors border-b border-gray-100">
                 <td className="p-3 text-center border-r border-gray-50">
                   {row.isValid ? (
@@ -119,7 +151,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                   <input 
                     type="number" 
                     value={row.QTD} 
-                    onChange={e => handleCellChange(row.id, 'QTD', parseInt(e.target.value))}
+                    onChange={e => handleCellChange(row.id, 'QTD', parseInt(e.target.value) || 0)}
                     className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none"
                   />
                 </td>
@@ -186,6 +218,12 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
           </tbody>
         </table>
       </div>
+      {filteredData.length === 0 && data.length > 0 && (
+        <div className="p-10 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/30">
+          <Search className="w-10 h-10 mb-2 opacity-20" />
+          <p className="text-sm font-medium">Nenhum motorista encontrado para "{searchTerm}"</p>
+        </div>
+      )}
       {data.length === 0 && (
         <div className="p-20 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/30">
           <AlertCircle className="w-16 h-16 mb-4 opacity-10" />
