@@ -65,10 +65,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
     { label: 'APLICADO POR', key: 'APLICADO POR', type: 'text' },
   ];
 
-  // Lista de meses extraída do MONTH_MAP
   const mesesOptions = Object.keys(MONTH_MAP);
 
-  // Opções para Tipo de Desvio conforme solicitado
   const desvioOptions = [
     "V-ACIMA DE 60 KM/H",
     "V-ACIMA DE 80 KM/H",
@@ -188,14 +186,18 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                     ))}
                   </select>
                 </td>
-                <td className="p-1 border-r border-gray-50">
+                <td className="p-1.5 border-r border-gray-50 text-center">
                   <select 
                     value={row.TRATADO} 
                     onChange={e => handleCellChange(row.id, 'TRATADO', e.target.value)}
-                    className="w-full p-2 bg-transparent focus:bg-white border border-transparent focus:border-cyan-200 rounded outline-none cursor-pointer"
+                    className={`w-[85%] mx-auto px-3 py-1.5 border-2 border-white rounded-full outline-none cursor-pointer font-black text-black transition-all text-[11px] appearance-none text-center shadow-lg ${
+                      row.TRATADO === 'SIM' 
+                        ? 'bg-[#2eff7a] shadow-[0_0_12px_rgba(46,255,122,0.5)]' 
+                        : 'bg-[#ff4b4b] shadow-[0_0_12px_rgba(255,75,75,0.5)]'
+                    }`}
                   >
-                    <option value="SIM">SIM</option>
-                    <option value="NÃO">NÃO</option>
+                    <option value="SIM" className="bg-white text-black font-bold">SIM</option>
+                    <option value="NÃO" className="bg-white text-black font-bold">NÃO</option>
                   </select>
                 </td>
                 <td className="p-1 border-r border-gray-50">
