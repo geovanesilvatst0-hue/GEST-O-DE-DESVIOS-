@@ -12,12 +12,20 @@ interface DataEditorProps {
 
 const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchDesvioTerm, setSearchDesvioTerm] = useState('');
+  const [selectedDesvioFilter, setSelectedDesvioFilter] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({
     isOpen: false,
     id: null
   });
+
+  const deviationOptions = [
+    "V-ACIMA DE 80 KM/H",
+    "FRENAGEM BRUSCA",
+    "V-ACIMA DE 60 KM/H",
+    "FADIGA",
+    "CELULAR"
+  ];
 
   const filteredData = useMemo(() => {
     let result = data;
@@ -25,15 +33,14 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
       const term = searchTerm.toUpperCase().trim();
       result = result.filter(row => (row.MOTORISTAS || '').toUpperCase().includes(term));
     }
-    if (searchDesvioTerm.trim()) {
-      const term = searchDesvioTerm.toUpperCase().trim();
-      result = result.filter(row => (row['TIPO DE DESVIO'] || '').toUpperCase().includes(term));
+    if (selectedDesvioFilter) {
+      result = result.filter(row => row['TIPO DE DESVIO'] === selectedDesvioFilter);
     }
     if (selectedMonth) {
       result = result.filter(row => row['MÊS'] === selectedMonth);
     }
     return result;
-  }, [data, searchTerm, searchDesvioTerm, selectedMonth]);
+  }, [data, searchTerm, selectedDesvioFilter, selectedMonth]);
 
   const handleCellChange = (id: string, field: keyof DeviationRecord, value: any) => {
     onUpdate(prev => prev.map(item => 
@@ -99,13 +106,17 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
               </div>
               <div className="relative flex-1">
                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input 
-                  type="text"
-                  placeholder="Desvio..."
-                  value={searchDesvioTerm}
-                  onChange={(e) => setSearchDesvioTerm(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm"
-                />
+                <select 
+                  value={selectedDesvioFilter}
+                  onChange={(e) => setSelectedDesvioFilter(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm appearance-none cursor-pointer"
+                >
+                  <option value="">Filtrar Desvio...</option>
+                  {deviationOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
               <div className="relative flex-1">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -155,7 +166,20 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                     <input type="text" value={row.MOTORISTAS} onChange={e => handleCellChange(row.id, 'MOTORISTAS', e.target.value)} className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded" />
                   </td>
                   <td className="p-1 border-r border-gray-50">
-                    <input type="text" value={row["TIPO DE DESVIO"]} onChange={e => handleCellChange(row.id, 'TIPO DE DESVIO', e.target.value)} className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded" />
+                    <select 
+                      value={row["TIPO DE DESVIO"]} 
+                      onChange={e => handleCellChange(row.id, 'TIPO DE DESVIO', e.target.value)} 
+                      className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      {deviationOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                      {/* Preservar valor atual se ele não estiver na lista padrão (ex: com barra no final) */}
+                      {row["TIPO DE DESVIO"] && !deviationOptions.includes(row["TIPO DE DESVIO"]) && (
+                        <option value={row["TIPO DE DESVIO"]}>{row["TIPO DE DESVIO"]}</option>
+                      )}
+                    </select>
                   </td>
                   <td className="p-1 border-r border-gray-50">
                     <input type="number" value={row.QTD} onChange={e => handleCellChange(row.id, 'QTD', parseInt(e.target.value) || 0)} className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded" />
