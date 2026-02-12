@@ -26,6 +26,23 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
     "CELULAR"
   ];
 
+  const treatmentOptions = [
+    "ORIENTAÇÃO",
+    "DEMISSÃO",
+    "ADVERTÊNCIA"
+  ];
+
+  const statusOptions = [
+    "TRATADO",
+    "EM ABERTO"
+  ];
+
+  const appliedByOptions = [
+    "JAQUELINE",
+    "CLODOVEL",
+    "OUTRO"
+  ];
+
   const filteredData = useMemo(() => {
     let result = data;
     if (filters.motorista.trim()) {
@@ -199,16 +216,52 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
                     </select>
                   </td>
                   <td className="p-1 border-r border-gray-50">
-                    <input type="text" value={row.TRATATIVA} onChange={e => handleCellChange(row.id, 'TRATATIVA', e.target.value)} className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded" />
+                    <select 
+                      value={row.TRATATIVA} 
+                      onChange={e => handleCellChange(row.id, 'TRATATIVA', e.target.value)} 
+                      className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      {treatmentOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                      {row.TRATATIVA && !treatmentOptions.includes(row.TRATATIVA) && (
+                        <option value={row.TRATATIVA}>{row.TRATATIVA}</option>
+                      )}
+                    </select>
                   </td>
                   <td className="p-1 border-r border-gray-50 text-center">
                      <input type="date" value={row.DATA} onChange={e => handleCellChange(row.id, 'DATA', e.target.value)} className="p-1 text-xs border-none bg-transparent text-gray-900" />
                   </td>
                   <td className="p-1 border-r border-gray-50">
-                    <input type="text" value={row.STATUS} onChange={e => handleCellChange(row.id, 'STATUS', e.target.value)} className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded" />
+                    <select 
+                      value={row.STATUS} 
+                      onChange={e => handleCellChange(row.id, 'STATUS', e.target.value)} 
+                      className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      {statusOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                      {row.STATUS && !statusOptions.includes(row.STATUS) && (
+                        <option value={row.STATUS}>{row.STATUS}</option>
+                      )}
+                    </select>
                   </td>
                   <td className="p-1 border-r border-gray-50">
-                    <input type="text" value={row["APLICADO POR"]} onChange={e => handleCellChange(row.id, 'APLICADO POR', e.target.value)} className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded" />
+                    <select 
+                      value={row["APLICADO POR"]} 
+                      onChange={e => handleCellChange(row.id, 'APLICADO POR', e.target.value)} 
+                      className="w-full p-2 bg-transparent text-gray-900 focus:bg-white outline-none rounded cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      {appliedByOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                      {row["APLICADO POR"] && !appliedByOptions.includes(row["APLICADO POR"]) && (
+                        <option value={row["APLICADO POR"]}>{row["APLICADO POR"]}</option>
+                      )}
+                    </select>
                   </td>
                   <td className="p-2 text-center">
                     <button 
