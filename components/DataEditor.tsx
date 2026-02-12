@@ -161,7 +161,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
               <tr>
                 <th className="p-3 w-14 text-center">OK</th>
                 {columns.map(col => (
-                  <th key={col.key} className="p-3 border-r border-[#0a3646]">
+                  <th key={col.key} className={`p-3 border-r border-[#0a3646] ${col.key === 'QTD' ? 'w-20' : ''}`}>
                     {col.label}
                   </th>
                 ))}
