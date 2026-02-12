@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { DeviationRecord } from './types';
 import { cleanData } from './services/excelService';
@@ -34,6 +34,13 @@ const App: React.FC = () => {
   const [dbStatus, setDbStatus] = useState<'connected' | 'error' | 'not_configured' | 'checking'>('checking');
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
+  // Filtros globais para que o cabeçalho possa reagir
+  const [filters, setFilters] = useState({
+    motorista: '',
+    desvio: '',
+    mes: ''
+  });
+
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
   };
@@ -44,7 +51,6 @@ const App: React.FC = () => {
       return;
     }
     try {
-      // Tenta uma busca simples para validar a conexão/chave
       const { error } = await supabase!.from('deviations').select('id').limit(1);
       if (error) throw error;
       setDbStatus('connected');
@@ -72,6 +78,25 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Totais que reagem aos filtros globais
+  const totalsByType = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    // Filtramos os dados antes de contar para o resumo do cabeçalho
+    const filteredForSummary = data.filter(item => {
+      const matchMotorista = !filters.motorista || (item.MOTORISTAS || '').toUpperCase().includes(filters.motorista.toUpperCase());
+      const matchDesvio = !filters.desvio || item['TIPO DE DESVIO'] === filters.desvio;
+      const matchMes = !filters.mes || item['MÊS'] === filters.mes;
+      return matchMotorista && matchDesvio && matchMes;
+    });
+
+    filteredForSummary.forEach(item => {
+      const type = (item["TIPO DE DESVIO"] || "N/A").trim().toUpperCase();
+      counts[type] = (counts[type] || 0) + (Number(item.QTD) || 0);
+    });
+    return counts;
+  }, [data, filters]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -125,9 +150,7 @@ const App: React.FC = () => {
 
   const handleDelete = useCallback((id: string) => {
     if (!id) return;
-    
     setData(prev => prev.filter(item => item.id !== id));
-
     if (isSupabaseConfigured) {
       deleteDeviation(id).catch(err => {
         console.error("Erro na exclusão remota:", err);
@@ -168,7 +191,6 @@ const App: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-gray-900 leading-tight">Gestor de Desvios</h1>
-              {/* Indicador de Status do Banco */}
               <div className="flex items-center gap-1.5 ml-2 px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100">
                 <div className={`w-2 h-2 rounded-full ${
                   dbStatus === 'connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 
@@ -182,6 +204,20 @@ const App: React.FC = () => {
             </div>
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Cloud v2.6.0</p>
           </div>
+        </div>
+
+        {/* Resumo de Totais que agora responde aos filtros */}
+        <div className="hidden xl:flex flex-1 justify-center px-8">
+           <div className="flex gap-6 overflow-x-auto no-scrollbar py-1">
+             {Object.entries(totalsByType).map(([type, total]) => (
+               <div key={type} className="flex flex-col items-center min-w-[100px] border-r border-gray-100 last:border-none px-4">
+                 <span className="text-[7px] font-black text-gray-400 uppercase tracking-tighter text-center leading-tight mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                   {type}
+                 </span>
+                 <span className="text-sm font-black text-[#0e4b61]">{total}</span>
+               </div>
+             ))}
+           </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -218,7 +254,13 @@ const App: React.FC = () => {
         ) : (
           <div className="h-full">
             {activeTab === 'editor' ? (
-              <DataEditor data={data} onUpdate={setData} onDelete={handleDelete} />
+              <DataEditor 
+                data={data} 
+                onUpdate={setData} 
+                onDelete={handleDelete}
+                filters={filters}
+                onFilterChange={setFilters}
+              />
             ) : (
               <Dashboard data={data} />
             )}

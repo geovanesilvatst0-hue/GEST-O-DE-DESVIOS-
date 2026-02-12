@@ -8,12 +8,11 @@ interface DataEditorProps {
   data: DeviationRecord[];
   onUpdate: React.Dispatch<React.SetStateAction<DeviationRecord[]>>;
   onDelete: (id: string) => void;
+  filters: { motorista: string; desvio: string; mes: string };
+  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string }>>;
 }
 
-const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDesvioFilter, setSelectedDesvioFilter] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('');
+const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filters, onFilterChange }) => {
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({
     isOpen: false,
     id: null
@@ -29,18 +28,18 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
 
   const filteredData = useMemo(() => {
     let result = data;
-    if (searchTerm.trim()) {
-      const term = searchTerm.toUpperCase().trim();
+    if (filters.motorista.trim()) {
+      const term = filters.motorista.toUpperCase().trim();
       result = result.filter(row => (row.MOTORISTAS || '').toUpperCase().includes(term));
     }
-    if (selectedDesvioFilter) {
-      result = result.filter(row => row['TIPO DE DESVIO'] === selectedDesvioFilter);
+    if (filters.desvio) {
+      result = result.filter(row => row['TIPO DE DESVIO'] === filters.desvio);
     }
-    if (selectedMonth) {
-      result = result.filter(row => row['MÊS'] === selectedMonth);
+    if (filters.mes) {
+      result = result.filter(row => row['MÊS'] === filters.mes);
     }
     return result;
-  }, [data, searchTerm, selectedDesvioFilter, selectedMonth]);
+  }, [data, filters]);
 
   const handleCellChange = (id: string, field: keyof DeviationRecord, value: any) => {
     onUpdate(prev => prev.map(item => 
@@ -99,16 +98,16 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                 <input 
                   type="text"
                   placeholder="Motorista..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.motorista}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, motorista: e.target.value }))}
                   className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm"
                 />
               </div>
               <div className="relative flex-1">
                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <select 
-                  value={selectedDesvioFilter}
-                  onChange={(e) => setSelectedDesvioFilter(e.target.value)}
+                  value={filters.desvio}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, desvio: e.target.value }))}
                   className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm appearance-none cursor-pointer"
                 >
                   <option value="">Filtrar Desvio...</option>
@@ -121,8 +120,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
               <div className="relative flex-1">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <select 
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  value={filters.mes}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, mes: e.target.value }))}
                   className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm appearance-none cursor-pointer"
                 >
                   <option value="">Filtrar Mês...</option>
@@ -175,7 +174,6 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                       {deviationOptions.map(opt => (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
-                      {/* Preservar valor atual se ele não estiver na lista padrão (ex: com barra no final) */}
                       {row["TIPO DE DESVIO"] && !deviationOptions.includes(row["TIPO DE DESVIO"]) && (
                         <option value={row["TIPO DE DESVIO"]}>{row["TIPO DE DESVIO"]}</option>
                       )}
