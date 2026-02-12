@@ -13,6 +13,7 @@ interface DataEditorProps {
 const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchDesvioTerm, setSearchDesvioTerm] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({
     isOpen: false,
     id: null
@@ -28,8 +29,11 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
       const term = searchDesvioTerm.toUpperCase().trim();
       result = result.filter(row => (row['TIPO DE DESVIO'] || '').toUpperCase().includes(term));
     }
+    if (selectedMonth) {
+      result = result.filter(row => row['MÊS'] === selectedMonth);
+    }
     return result;
-  }, [data, searchTerm, searchDesvioTerm]);
+  }, [data, searchTerm, searchDesvioTerm, selectedMonth]);
 
   const handleCellChange = (id: string, field: keyof DeviationRecord, value: any) => {
     onUpdate(prev => prev.map(item => 
@@ -102,6 +106,20 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete }) => 
                   onChange={(e) => setSearchDesvioTerm(e.target.value)}
                   className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm"
                 />
+              </div>
+              <div className="relative flex-1">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select 
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm appearance-none cursor-pointer"
+                >
+                  <option value="">Filtrar Mês...</option>
+                  {Object.keys(MONTH_MAP).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
             </div>
           </div>
