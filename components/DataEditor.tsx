@@ -1,15 +1,15 @@
 
 import React, { useState, useMemo } from 'react';
 import { DeviationRecord, MONTH_MAP } from '../types';
-import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter, Search, X, Calendar } from 'lucide-react';
+import { Trash2, Plus, AlertCircle, CheckCircle2, ChevronDown, Filter, Search, X, Calendar, MessageSquareText } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 
 interface DataEditorProps {
   data: DeviationRecord[];
   onUpdate: React.Dispatch<React.SetStateAction<DeviationRecord[]>>;
   onDelete: (id: string) => void;
-  filters: { motorista: string; desvio: string; mes: string };
-  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string }>>;
+  filters: { motorista: string; desvio: string; mes: string; tratativa: string };
+  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string; tratativa: string }>>;
 }
 
 const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filters, onFilterChange }) => {
@@ -54,6 +54,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
     }
     if (filters.mes) {
       result = result.filter(row => row['MÊS'] === filters.mes);
+    }
+    if (filters.tratativa) {
+      result = result.filter(row => row.TRATATIVA === filters.tratativa);
     }
     return result;
   }, [data, filters]);
@@ -144,6 +147,20 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
                   <option value="">Filtrar Mês...</option>
                   {Object.keys(MONTH_MAP).map(m => (
                     <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+              <div className="relative flex-1">
+                <MessageSquareText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select 
+                  value={filters.tratativa}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, tratativa: e.target.value }))}
+                  className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm appearance-none cursor-pointer"
+                >
+                  <option value="">Filtrar Tratativa...</option>
+                  {treatmentOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />

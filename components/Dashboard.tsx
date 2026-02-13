@@ -208,6 +208,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [filteredData]);
 
+  const treatmentTypeStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredData.forEach(r => {
+      if (r.TRATATIVA) {
+        const t = r.TRATATIVA.trim().toUpperCase();
+        // Alterado para contar apenas a ocorrência (soma de tratativas) em vez de somar o QTD de desvios
+        counts[t] = (counts[t] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredData]);
+
   const handleExportPpt = async () => {
     setIsExportingPpt(true);
     try {
@@ -284,6 +298,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Status</label>
           <select className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 outline-none font-bold" value={filters.status} onChange={e => setFilters(f => ({...f, status: e.target.value}))}>
             {options.status.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Tratativa</label>
+          <select className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 outline-none font-bold" value={filters.tratativa} onChange={e => setFilters(f => ({...f, tratativa: e.target.value}))}>
+            {options.tratativas.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         </div>
       </div>
@@ -407,12 +427,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center">
-          <div className="bg-blue-50 p-4 rounded-full mb-4">
-            <TrendingUp className="w-8 h-8 text-blue-600" />
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-sm font-black text-[#0e4b61] mb-6 uppercase flex items-center gap-2">
+            <MessageSquareText className="w-4 h-4 text-blue-500" /> Distribuição por Tratativa
+          </h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={treatmentTypeStats} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, value }) => `${name}: ${value}`}>
+                   {treatmentTypeStats.map((entry, index) => (
+                     <Cell key={`cell-trat-${index}`} fill={COLORS[index % COLORS.length]} />
+                   ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" align="center" />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          <h4 className="text-lg font-black text-[#0e4b61] uppercase mb-2">Relatório Executivo</h4>
-          <p className="text-xs text-gray-500 max-w-xs font-medium">Nomes tratados para visualização em Title Case. Eixos X alinhados milimetricamente para evitar sobreposição visual.</p>
         </div>
       </div>
     </div>
