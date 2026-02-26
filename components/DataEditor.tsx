@@ -29,7 +29,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
   const treatmentOptions = [
     "ORIENTAÇÃO",
     "DEMISSÃO",
-    "ADVERTÊNCIA"
+    "ADVERTÊNCIA",
+    "WHATSAPP",
+    "DESLIGADO"
   ];
 
   const statusOptions = [
