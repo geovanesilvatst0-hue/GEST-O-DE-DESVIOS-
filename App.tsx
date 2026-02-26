@@ -39,7 +39,8 @@ const App: React.FC = () => {
     motorista: '',
     desvio: '',
     mes: '',
-    tratativa: ''
+    tratativa: '',
+    status: ''
   });
 
   const showToast = (message: string, type: ToastType = 'success') => {
@@ -90,7 +91,8 @@ const App: React.FC = () => {
       const matchDesvio = !filters.desvio || item['TIPO DE DESVIO'] === filters.desvio;
       const matchMes = !filters.mes || item['MÊS'] === filters.mes;
       const matchTratativa = !filters.tratativa || item.TRATATIVA === filters.tratativa;
-      return matchMotorista && matchDesvio && matchMes && matchTratativa;
+      const matchStatus = !filters.status || item.STATUS === filters.status;
+      return matchMotorista && matchDesvio && matchMes && matchTratativa && matchStatus;
     });
 
     filteredForSummary.forEach(item => {

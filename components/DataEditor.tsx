@@ -8,8 +8,8 @@ interface DataEditorProps {
   data: DeviationRecord[];
   onUpdate: React.Dispatch<React.SetStateAction<DeviationRecord[]>>;
   onDelete: (id: string) => void;
-  filters: { motorista: string; desvio: string; mes: string; tratativa: string };
-  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string; tratativa: string }>>;
+  filters: { motorista: string; desvio: string; mes: string; tratativa: string; status: string };
+  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string; tratativa: string; status: string }>>;
 }
 
 const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filters, onFilterChange }) => {
@@ -34,7 +34,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
 
   const statusOptions = [
     "TRATADO",
-    "EM ABERTO"
+    "EM ABERTO",
+    "APLICADO"
   ];
 
   const appliedByOptions = [
@@ -57,6 +58,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
     }
     if (filters.tratativa) {
       result = result.filter(row => row.TRATATIVA === filters.tratativa);
+    }
+    if (filters.status) {
+      result = result.filter(row => row.STATUS === filters.status);
     }
     return result;
   }, [data, filters]);
@@ -160,6 +164,20 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
                 >
                   <option value="">Filtrar Tratativa...</option>
                   {treatmentOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+              <div className="relative flex-1">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select 
+                  value={filters.status}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm appearance-none cursor-pointer"
+                >
+                  <option value="">Filtrar Status...</option>
+                  {statusOptions.map(opt => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
