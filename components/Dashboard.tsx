@@ -21,7 +21,8 @@ import {
   Search,
   Truck,
   TrendingUp,
-  Printer
+  Printer,
+  ChevronDown
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -59,8 +60,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     tipoDesvio: 'TODOS',
     status: 'TODOS',
     mes: 'TODOS',
-    tratativa: 'TODOS'
+    tratativa: 'TODOS',
+    diaSemana: [] as string[],
+    startDate: '',
+    endDate: ''
   });
+
+  const [isDayFilterOpen, setIsDayFilterOpen] = useState(false);
 
   const filteredData = useMemo(() => {
     if (!data) return [];
@@ -71,7 +77,27 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       const matchStatus = filters.status === 'TODOS' || r.STATUS === filters.status;
       const matchMes = filters.mes === 'TODOS' || r["MÊS"] === filters.mes;
       const matchTratativa = filters.tratativa === 'TODOS' || r.TRATATIVA === filters.tratativa;
-      return matchMotorista && matchSearch && matchTipo && matchStatus && matchMes && matchTratativa;
+      
+      let matchDiaSemana = true;
+      if (filters.diaSemana.length > 0 && r.DATA) {
+        const date = new Date(r.DATA + 'T12:00:00');
+        if (!isNaN(date.getTime())) {
+          const days = ["1-DOMINGO", "2-SEGUNDA-FEIRA", "3-TERÇA-FEIRA", "4-QUARTA-FEIRA", "5-QUINTA-FEIRA", "6-SEXTA-FEIRA", "7-SÁBADO"];
+          matchDiaSemana = filters.diaSemana.includes(days[date.getDay()]);
+        } else {
+          matchDiaSemana = false;
+        }
+      }
+
+      let matchDateRange = true;
+      if (r.DATA) {
+        if (filters.startDate && r.DATA < filters.startDate) matchDateRange = false;
+        if (filters.endDate && r.DATA > filters.endDate) matchDateRange = false;
+      } else if (filters.startDate || filters.endDate) {
+        matchDateRange = false;
+      }
+
+      return matchMotorista && matchSearch && matchTipo && matchStatus && matchMes && matchTratativa && matchDiaSemana && matchDateRange;
     });
   }, [data, filters]);
 
@@ -81,7 +107,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       status: ['TODOS', ...Array.from(new Set(data.map(r => r.STATUS)))].filter(Boolean).sort(),
       meses: ['TODOS', ...Array.from(new Set(data.map(r => r["MÊS"])))].filter(Boolean).sort((a: string, b: string) => (MONTH_MAP[a] || 0) - (MONTH_MAP[b] || 0)),
       tratativas: ['TODOS', ...Array.from(new Set(data.map(r => r.TRATATIVA)))].filter(Boolean).sort(),
-      tiposDesvio: ['TODOS', ...Array.from(new Set(data.map(r => r["TIPO DE DESVIO"])))].filter(Boolean).sort()
+      tiposDesvio: ['TODOS', ...Array.from(new Set(data.map(r => r["TIPO DE DESVIO"])))].filter(Boolean).sort(),
+      diasSemana: ["1-DOMINGO", "2-SEGUNDA-FEIRA", "3-TERÇA-FEIRA", "4-QUARTA-FEIRA", "5-QUINTA-FEIRA", "6-SEXTA-FEIRA", "7-SÁBADO"]
     };
   }, [data]);
 
@@ -268,8 +295,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-6 gap-4 no-print">
-        <div className="md:col-span-1">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 no-print">
+        <div>
           <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Pesquisar</label>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -305,6 +332,78 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           <select className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 outline-none font-bold" value={filters.tratativa} onChange={e => setFilters(f => ({...f, tratativa: e.target.value}))}>
             {options.tratativas.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Data Inicial</label>
+          <input 
+            type="date" 
+            value={filters.startDate} 
+            onChange={e => setFilters(f => ({...f, startDate: e.target.value}))} 
+            className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 outline-none font-bold" 
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Data Final</label>
+          <input 
+            type="date" 
+            value={filters.endDate} 
+            onChange={e => setFilters(f => ({...f, endDate: e.target.value}))} 
+            className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 outline-none font-bold" 
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Dia Semana</label>
+          <div className="relative">
+            <div 
+              className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 outline-none font-bold cursor-pointer flex items-center justify-between"
+              onClick={() => setIsDayFilterOpen(!isDayFilterOpen)}
+            >
+              <span className="truncate">
+                {filters.diaSemana.length === 0 ? 'TODOS' : 
+                 filters.diaSemana.length === 1 ? filters.diaSemana[0] : 
+                 `${filters.diaSemana.length} selecionados`}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isDayFilterOpen ? 'rotate-180' : ''}`} />
+            </div>
+            
+            {isDayFilterOpen && (
+              <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-2 max-h-60 overflow-y-auto">
+                <div className="flex flex-col gap-1">
+                  {options.diasSemana.map(day => (
+                    <label key={day} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={filters.diaSemana.includes(day)}
+                        onChange={() => {
+                          setFilters(prev => {
+                            const current = prev.diaSemana;
+                            if (current.includes(day)) {
+                              return { ...prev, diaSemana: current.filter(d => d !== day) };
+                            } else {
+                              return { ...prev, diaSemana: [...current, day] };
+                            }
+                          });
+                        }}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-xs font-bold text-gray-700">{day}</span>
+                    </label>
+                  ))}
+                </div>
+                {filters.diaSemana.length > 0 && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFilters(prev => ({ ...prev, diaSemana: [] }));
+                    }}
+                    className="w-full mt-2 pt-2 border-t border-gray-100 text-[10px] font-black text-rose-500 uppercase hover:text-rose-600"
+                  >
+                    Limpar Seleção
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -40,7 +40,10 @@ const App: React.FC = () => {
     desvio: '',
     mes: '',
     tratativa: '',
-    status: ''
+    status: '',
+    diaSemana: [] as string[],
+    startDate: '',
+    endDate: ''
   });
 
   const showToast = (message: string, type: ToastType = 'success') => {
@@ -92,7 +95,25 @@ const App: React.FC = () => {
       const matchMes = !filters.mes || item['MÊS'] === filters.mes;
       const matchTratativa = !filters.tratativa || item.TRATATIVA === filters.tratativa;
       const matchStatus = !filters.status || item.STATUS === filters.status;
-      return matchMotorista && matchDesvio && matchMes && matchTratativa && matchStatus;
+      
+      let matchDiaSemana = true;
+      if (filters.diaSemana.length > 0 && item.DATA) {
+        const date = new Date(item.DATA + 'T12:00:00');
+        if (!isNaN(date.getTime())) {
+          const days = ["1-DOMINGO", "2-SEGUNDA-FEIRA", "3-TERÇA-FEIRA", "4-QUARTA-FEIRA", "5-QUINTA-FEIRA", "6-SEXTA-FEIRA", "7-SÁBADO"];
+          matchDiaSemana = filters.diaSemana.includes(days[date.getDay()]);
+        }
+      }
+
+      let matchDateRange = true;
+      if (item.DATA) {
+        if (filters.startDate && item.DATA < filters.startDate) matchDateRange = false;
+        if (filters.endDate && item.DATA > filters.endDate) matchDateRange = false;
+      } else if (filters.startDate || filters.endDate) {
+        matchDateRange = false;
+      }
+
+      return matchMotorista && matchDesvio && matchMes && matchTratativa && matchStatus && matchDiaSemana && matchDateRange;
     });
 
     filteredForSummary.forEach(item => {

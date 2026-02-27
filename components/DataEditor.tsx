@@ -8,8 +8,8 @@ interface DataEditorProps {
   data: DeviationRecord[];
   onUpdate: React.Dispatch<React.SetStateAction<DeviationRecord[]>>;
   onDelete: (id: string) => void;
-  filters: { motorista: string; desvio: string; mes: string; tratativa: string; status: string };
-  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string; tratativa: string; status: string }>>;
+  filters: { motorista: string; desvio: string; mes: string; tratativa: string; status: string; diaSemana: string[]; startDate: string; endDate: string };
+  onFilterChange: React.Dispatch<React.SetStateAction<{ motorista: string; desvio: string; mes: string; tratativa: string; status: string; diaSemana: string[]; startDate: string; endDate: string }>>;
 }
 
 const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filters, onFilterChange }) => {
@@ -17,6 +17,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
     isOpen: false,
     id: null
   });
+
+  const [isDayFilterOpen, setIsDayFilterOpen] = useState(false);
 
   const deviationOptions = [
     "V-ACIMA DE 80 KM/H",
@@ -38,6 +40,16 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
     "TRATADO",
     "EM ABERTO",
     "APLICADO"
+  ];
+
+  const weekDays = [
+    "1-DOMINGO",
+    "2-SEGUNDA-FEIRA",
+    "3-TERÇA-FEIRA",
+    "4-QUARTA-FEIRA",
+    "5-QUINTA-FEIRA",
+    "6-SEXTA-FEIRA",
+    "7-SÁBADO"
   ];
 
   const appliedByOptions = [
@@ -63,6 +75,20 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
     }
     if (filters.status) {
       result = result.filter(row => row.STATUS === filters.status);
+    }
+    if (filters.diaSemana.length > 0) {
+      result = result.filter(row => {
+        if (!row.DATA) return false;
+        const date = new Date(row.DATA + 'T12:00:00');
+        if (isNaN(date.getTime())) return false;
+        return filters.diaSemana.includes(weekDays[date.getDay()]);
+      });
+    }
+    if (filters.startDate) {
+      result = result.filter(row => row.DATA && row.DATA >= filters.startDate);
+    }
+    if (filters.endDate) {
+      result = result.filter(row => row.DATA && row.DATA <= filters.endDate);
     }
     return result;
   }, [data, filters]);
@@ -184,6 +210,78 @@ const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, onDelete, filte
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+              <div className="relative flex-1 min-w-[120px]">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="w-full pl-9 pr-2 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-[10px] outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm"
+                  title="Data Inicial"
+                />
+              </div>
+              <div className="relative flex-1 min-w-[120px]">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => onFilterChange(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="w-full pl-9 pr-2 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-[10px] outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm"
+                  title="Data Final"
+                />
+              </div>
+              <div className="relative flex-1">
+                <div 
+                  className="w-full pl-9 pr-8 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-bold shadow-sm cursor-pointer flex items-center justify-between"
+                  onClick={() => setIsDayFilterOpen(!isDayFilterOpen)}
+                >
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <span className="truncate">
+                    {filters.diaSemana.length === 0 ? 'Filtrar Dia Semana...' : 
+                     filters.diaSemana.length === 1 ? filters.diaSemana[0] : 
+                     `${filters.diaSemana.length} selecionados`}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isDayFilterOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isDayFilterOpen && (
+                  <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-2 max-h-60 overflow-y-auto">
+                    <div className="flex flex-col gap-1">
+                      {weekDays.map(day => (
+                        <label key={day} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={filters.diaSemana.includes(day)}
+                            onChange={() => {
+                              onFilterChange(prev => {
+                                const current = prev.diaSemana;
+                                if (current.includes(day)) {
+                                  return { ...prev, diaSemana: current.filter(d => d !== day) };
+                                } else {
+                                  return { ...prev, diaSemana: [...current, day] };
+                                }
+                              });
+                            }}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-[10px] font-bold text-gray-700">{day}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {filters.diaSemana.length > 0 && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFilterChange(prev => ({ ...prev, diaSemana: [] }));
+                        }}
+                        className="w-full mt-2 pt-2 border-t border-gray-100 text-[10px] font-black text-rose-500 uppercase hover:text-rose-600"
+                      >
+                        Limpar Seleção
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
